@@ -1,0 +1,1320 @@
+<!--This worked out but only giving selection options:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Bot</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #333;
+            text-align: center;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #5cb85c;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #4cae4c;
+        }
+
+        #result {
+            margin-top: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #result h3 {
+            margin: 0 0 10px;
+            font-size: 20px;
+        }
+
+        #result p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h2>Predict Disease Based on Symptoms</h2>
+
+    <form id="symptoms-form">
+        <label for="symptoms">Select Symptoms:</label>
+        <select id="symptoms" multiple>
+            {% for symptom in symptoms %}
+            <option value="{{ symptom }}">{{ symptom }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">Predict Disease</button>
+    </form>
+
+    <div id="result">
+        <h3>Disease Prediction Result</h3>
+        <p><strong>Disease:</strong> <span id="disease-name"></span></p>
+        <p><strong>Description:</strong> <span id="disease-description"></span></p>
+        <p><strong>Precautions:</strong> <span id="disease-precautions"></span></p>
+        <p><strong>Foods to Take:</strong> <span id="disease-foods-take"></span></p>
+        <p><strong>Foods to Avoid:</strong> <span id="disease-foods-avoid"></span></p>
+    </div>
+
+    <script>
+        document.getElementById('symptoms-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const symptomsSelect = document.getElementById('symptoms');
+            const selectedSymptoms = Array.from(symptomsSelect.selectedOptions).map(option => option.value);
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body: new URLSearchParams({ 'symptoms': selectedSymptoms })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('disease-name').textContent = data.disease;
+                document.getElementById('disease-description').textContent = data.description;
+                document.getElementById('disease-precautions').textContent = data.precautions;
+                document.getElementById('disease-foods-take').textContent = data.foods_to_take;
+                document.getElementById('disease-foods-avoid').textContent = data.foods_to_avoid;
+                document.getElementById('result').style.display = 'block';
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    </script>
+</body>
+</html>
+-->
+
+
+<!--
+# first half of next code
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot UI</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            background-image: url('https://img.freepik.com/premium-vector/cute-doctor-nurse-design_454510-10.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .left-section, .right-section {
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .left-section {
+            flex: 1;
+            max-width: 30%;
+            overflow-y: auto;
+        }
+
+        .right-section {
+            flex: 2;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .header .chatbot-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header .status {
+            font-size: 14px;
+            color: gray;
+            margin-top: 5px;
+        }
+
+        .chatbox {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            border: 1px solid transparent;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            border: 1px solid transparent;
+        }
+
+        .initial-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            align-self: flex-start;
+        }
+
+        .text-box-container {
+            display: flex;
+            align-items: center;
+            border-radius: 8px;
+            padding: 5px;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .text-box {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .send-button:hover {
+            background-color: #218838;
+        }
+
+        .symptom-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .feedback-container {
+            margin-top: 10px;
+        }
+
+        .feedback-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .feedback-button:hover {
+            background-color: #0056b3;
+        }
+
+        .feedback-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .feedback-form textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .feedback-form button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .feedback-form button:hover {
+            background-color: #218838;
+        }
+
+        /* Light Theme */
+        .light-theme {
+            --background-color: white;
+            --text-color: black;
+            --message-bg-color: #f1f1f1;
+            --header-bg-color: #e0e0e0;
+            --input-bg-color: #f1f1f1;
+            --input-text-color: black;
+        }
+
+        /* Dark Theme */
+        .dark-theme {
+            --background-color: rgba(0, 0, 0, 0.8);
+            --text-color: white;
+            --message-bg-color: rgba(0, 0, 0, 0.7);
+            --header-bg-color: rgba(0, 0, 0, 0.5);
+            --input-bg-color: rgba(0, 0, 0, 0.5);
+            --input-text-color: white;
+        }
+
+        /* Applying Theme */
+        .container {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .chatbox {
+            background-color: var(--message-bg-color);
+        }
+
+        .header {
+            background-color: var(--header-bg-color);
+        }
+
+        .text-box {
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+        }
+
+        .user-message {
+            background-color: rgba(0, 123, 255, 0.8);
+        }
+
+        .bot-message {
+            background-color: var(--message-bg-color);
+        }
+
+        .initial-message {
+            background-color: var(--message-bg-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .left-section, .right-section {
+                max-width: 100%;
+                flex: 1;
+            }
+
+            .right-section {
+                max-height: 70vh;
+            }
+
+            .text-box-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .text-box {
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .header .chatbot-name {
+                font-size: 16px;
+            }
+
+            .header .status {
+                font-size: 12px;
+            }
+
+            .text-box {
+                font-size: 14px;
+            }
+
+            .send-button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="container">
+        <div class="left-section">
+            <div class="history-container" id="historyContainer">
+                # Conversation history will be appended here 
+            </div>
+        </div>
+        
+        <div class="right-section">
+            <div class="header">
+                <img src="https://i.pinimg.com/originals/9a/11/33/9a1133d4af3b637e1c6c8ff251785f27.jpg" alt="Chatbot Avatar">
+                <div>
+                    <div class="chatbot-name">Symptom Bot</div>
+                    <div id="status" class="status">Online</div>
+                </div>
+                <button onclick="toggleTheme()" style="margin-left:auto;">Switch Theme</button>
+            </div>
+
+            <div class="chatbox" id="chatbox">
+                <div class="initial-message">Hello! I’m here to help you with your symptoms.</div>
+                # Messages will be appended here 
+            </div>
+
+            <div class="text-box-container">
+                <select id="symptomSelect" class="symptom-select">
+                    <option value="">Select a symptom</option>
+                    <option value="fever">Fever</option>
+                    <option value="cough">Cough</option>
+                    <option value="headache">Headache</option>
+                    <option value="nausea">Nausea</option>
+                    <option value="fatigue">Fatigue</option>
+                    <option value="sore throat">Sore Throat</option>
+                    #Add more symptoms as needed 
+                </select>
+                <input type="text" id="userInput" class="text-box" placeholder="Type your message here..." />
+                <button id="sendButton" class="send-button">Send</button>
+            </div>
+
+            <div class="feedback-container">
+                <button class="feedback-button" onclick="toggleFeedbackForm()">Provide Feedback</button>
+                <div class="feedback-form" id="feedbackForm">
+                    <textarea id="feedbackText" rows="4" placeholder="Your feedback here..."></textarea>
+                    <button onclick="submitFeedback()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatbox = document.getElementById('chatbox');
+        const sendButton = document.getElementById('sendButton');
+        const userInput = document.getElementById('userInput');
+        const symptomSelect = document.getElementById('symptomSelect');
+
+        sendButton.addEventListener('click', sendMessage);
+
+        function sendMessage() {
+            const message = userInput.value.trim();
+            const selectedSymptom = symptomSelect.value;
+
+            if (!message && !selectedSymptom) return;
+
+            const userMessage = message ? message : selectedSymptom;
+            appendMessage(userMessage, 'user');
+            userInput.value = '';
+            symptomSelect.value = '';
+
+            // Send user message to server
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userMessage }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendMessage(data.response, 'bot');
+            });
+        }
+
+        function appendMessage(text, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}-message`;
+            messageDiv.innerText = text;
+            chatbox.appendChild(messageDiv);
+            chatbox.scrollTop = chatbox.scrollHeight; // Scroll to the bottom
+        }
+
+        function toggleFeedbackForm() {
+            const feedbackForm = document.getElementById('feedbackForm');
+            feedbackForm.style.display = feedbackForm.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function submitFeedback() {
+            const feedbackText = document.getElementById('feedbackText').value.trim();
+            if (!feedbackText) return;
+
+            // Send feedback to server (implement this in Flask later)
+            console.log('Feedback submitted:', feedbackText);
+
+            document.getElementById('feedbackText').value = '';
+            toggleFeedbackForm();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            document.body.classList.toggle('dark-theme');
+        }
+    </script>
+</body>
+</html>
+-->
+
+<!--The down code is the new file upload frontend page that is not completely written but can be added to the above frontend code
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot UI</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            background-image: url('https://img.freepik.com/premium-vector/cute-doctor-nurse-design_454510-10.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .left-section, .right-section {
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .left-section {
+            flex: 1;
+            max-width: 30%;
+            overflow-y: auto;
+        }
+
+        .right-section {
+            flex: 2;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .header .chatbot-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header .status {
+            font-size: 14px;
+            color: gray;
+            margin-top: 5px;
+        }
+
+        .chatbox {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            border: 1px solid transparent;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            border: 1px solid transparent;
+        }
+
+        .initial-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            align-self: flex-start;
+        }
+
+        .text-box-container {
+            display: flex;
+            align-items: center;
+            border-radius: 8px;
+            padding: 5px;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .text-box {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .send-button:hover {
+            background-color: #218838;
+        }
+
+        .symptom-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .feedback-container {
+            margin-top: 10px;
+        }
+
+        .feedback-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .feedback-button:hover {
+            background-color: #0056b3;
+        }
+
+        .feedback-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .feedback-form textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .feedback-form button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .feedback-form button:hover {
+            background-color: #218838;
+        }
+
+        /* Light Theme */
+        .light-theme {
+            --background-color: white;
+            --text-color: black;
+            --message-bg-color: #f1f1f1;
+            --header-bg-color: #e0e0e0;
+            --input-bg-color: #f1f1f1;
+            --input-text-color: black;
+        }
+
+        /* Dark Theme */
+        .dark-theme {
+            --background-color: rgba(0, 0, 0, 0.8);
+            --text-color: white;
+            --message-bg-color: rgba(0, 0, 0, 0.7);
+            --header-bg-color: rgba(0, 0, 0, 0.5);
+            --input-bg-color: rgba(0, 0, 0, 0.5);
+            --input-text-color: white;
+        }
+
+        /* Applying Theme */
+        .container {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .chatbox {
+            background-color: var(--message-bg-color);
+        }
+
+        .header {
+            background-color: var(--header-bg-color);
+        }
+
+        .text-box {
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+        }
+
+        .user-message {
+            background-color: rgba(0, 123, 255, 0.8);
+        }
+
+        .bot-message {
+            background-color: var(--message-bg-color);
+        }
+
+        .initial-message {
+            background-color: var(--message-bg-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .left-section, .right-section {
+                max-width: 100%;
+                flex: 1;
+            }
+
+            .right-section {
+                max-height: 70vh;
+            }
+
+            .text-box-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .text-box {
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .header .chatbot-name {
+                font-size: 16px;
+            }
+
+            .header .status {
+                font-size: 12px;
+            }
+
+            .text-box {
+                font-size: 14px;
+            }
+
+            .send-button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <h2>Upload Health Records</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" id="fileInput" class="symptom-select">
+                <button type="submit" class="feedback-button">Upload File</button>
+            </form>
+        </div>
+        <div class="right-section">
+            <div class="header">
+                
+            </div>
+            <div class="chatbox" id="chatbox">
+                
+            </div>
+            <div class="text-box-container">
+                <input type="text" id="message" class="text-box" placeholder="Enter symptoms or message...">
+                <button class="send-button" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to send chat messages to the backend
+        function sendMessage() {
+            let userMessage = document.getElementById("message").value;
+
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: userMessage })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the response in the chatbox
+                console.log(data.response);
+            });
+        }
+
+        // Handle file uploads
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let formData = new FormData();
+            formData.append('file', document.getElementById('fileInput').files[0]);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.response);
+            });
+        });
+    </script>
+</body>
+</html>
+ -->
+
+
+
+
+<!--BOOM! This is the merging result html file of both two codes above:-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot UI</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            background-image: url('https://img.freepik.com/premium-vector/cute-doctor-nurse-design_454510-10.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .left-section, .right-section {
+            box-sizing: border-box;
+            padding: 20px;
+        }
+
+        .left-section {
+            flex: 1;
+            max-width: 30%;
+            overflow-y: auto;
+        }
+
+        .right-section {
+            flex: 2;
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .header img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .header .chatbot-name {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .header .status {
+            font-size: 14px;
+            color: gray;
+            margin-top: 5px;
+        }
+
+        .chatbox {
+            flex-grow: 1;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.9);
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            position: relative;
+        }
+
+        .user-message {
+            align-self: flex-end;
+            border: 1px solid transparent;
+        }
+
+        .bot-message {
+            align-self: flex-start;
+            border: 1px solid transparent;
+        }
+
+        .initial-message {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+            align-self: flex-start;
+        }
+
+        .text-box-container {
+            display: flex;
+            align-items: center;
+            border-radius: 8px;
+            padding: 5px;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .text-box {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .send-button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .send-button:hover {
+            background-color: #218838;
+        }
+
+        .symptom-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .file-upload {
+            margin-top: 10px;
+        }
+
+        .feedback-container {
+            margin-top: 10px;
+        }
+
+        .feedback-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .feedback-button:hover {
+            background-color: #0056b3;
+        }
+
+        .feedback-form {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .feedback-form textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .feedback-form button {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .feedback-form button:hover {
+            background-color: #218838;
+        }
+
+        .light-theme {
+            --background-color: white;
+            --text-color: black;
+            --message-bg-color: #f1f1f1;
+            --header-bg-color: #e0e0e0;
+            --input-bg-color: #f1f1f1;
+            --input-text-color: black;
+        }
+
+        .dark-theme {
+            --background-color: rgba(0, 0, 0, 0.8);
+            --text-color: white;
+            --message-bg-color: rgba(0, 0, 0, 0.7);
+            --header-bg-color: rgba(0, 0, 0, 0.5);
+            --input-bg-color: rgba(0, 0, 0, 0.5);
+            --input-text-color: white;
+        }
+
+        .container {
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .chatbox {
+            background-color: var(--message-bg-color);
+        }
+
+        .header {
+            background-color: var(--header-bg-color);
+        }
+
+        .text-box {
+            background-color: var(--input-bg-color);
+            color: var(--input-text-color);
+        }
+
+        .user-message {
+            background-color: rgba(0, 123, 255, 0.8);
+        }
+
+        .bot-message {
+            background-color: var(--message-bg-color);
+        }
+
+        .initial-message {
+            background-color: var(--message-bg-color);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .left-section, .right-section {
+                max-width: 100%;
+                flex: 1;
+            }
+
+            .right-section {
+                max-height: 70vh;
+            }
+
+            .text-box-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .text-box {
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header img {
+                width: 40px;
+                height: 40px;
+            }
+
+            .header .chatbot-name {
+                font-size: 16px;
+            }
+
+            .header .status {
+                font-size: 12px;
+            }
+
+            .text-box {
+                font-size: 14px;
+            }
+
+            .send-button {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-theme">
+    <div class="container">
+        <div class="left-section">
+            <div class="history-container" id="historyContainer">
+                <!-- Conversation history will be appended here -->
+            </div>
+        </div>
+
+        <div class="right-section">
+            <div class="header">
+                <img src="https://i.pinimg.com/originals/9a/11/33/9a1133d4af3b637e1c6c8ff251785f27.jpg" alt="Chatbot Avatar">
+                <div>
+                    <div class="chatbot-name">Symptom Bot</div>
+                    <div id="status" class="status">Online</div>
+                </div>
+                <button onclick="toggleTheme()" style="margin-left:auto;">Switch Theme</button>
+            </div>
+
+            <div class="chatbox" id="chatbox">
+                <div class="initial-message">Hello! I’m here to help you with your symptoms.</div>
+            </div>
+
+            <div class="text-box-container">
+                <select id="symptomSelect" class="symptom-select">
+                    <option value="">Select a symptom</option>
+                    <option value="fever">Fever</option>
+                    <option value="cough">Cough</option>
+                    <option value="headache">Headache</option>
+                    <option value="nausea">Nausea</option>
+                    <option value="fatigue">Fatigue</option>
+                    <option value="sore throat">Sore Throat</option>
+                </select>
+                <input type="file" id="fileUpload" class="file-upload" />
+                <input type="text" id="userInput" class="text-box" placeholder="Type your message here..." />
+                <button id="sendButton" class="send-button">Send</button>
+            </div>
+
+            <div class="feedback-container">
+                <button class="feedback-button" onclick="showFeedbackForm()">Feedback</button>
+                <div class="feedback-form" id="feedbackForm">
+                    <textarea placeholder="Your feedback..."></textarea>
+                    <button onclick="submitFeedback()">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chatbox = document.getElementById('chatbox');
+        let userInput = document.getElementById('userInput');
+        let sendButton = document.getElementById('sendButton');
+        const fileUpload = document.getElementById('fileUpload');
+        const feedbackForm = document.getElementById('feedbackForm');
+
+        function toggleTheme() {
+            const body = document.body;
+            if (body.classList.contains('dark-theme')) {
+                body.classList.remove('dark-theme');
+                body.classList.add('light-theme');
+            } else {
+                body.classList.remove('light-theme');
+                body.classList.add('dark-theme');
+            }
+        }
+
+        function showFeedbackForm() {
+            feedbackForm.style.display = feedbackForm.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function submitFeedback() {
+            alert("Thank you for your feedback!");
+            feedbackForm.style.display = 'none';
+        }
+
+        sendButton.addEventListener('click', () => {
+            const message = userInput.value.trim();
+            if (message) {
+                addUserMessage(message);
+                userInput.value = '';
+                // Simulate bot response
+                addBotMessage('This is a simulated response.');
+            }
+        });
+
+        function addUserMessage(message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', 'user-message');
+            msgDiv.textContent = message;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        function addBotMessage(message) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', 'bot-message');
+            msgDiv.textContent = message;
+            chatbox.appendChild(msgDiv);
+            chatbox.scrollTop = chatbox.scrollHeight;
+        }
+
+        fileUpload.addEventListener('change', () => {
+            const file = fileUpload.files[0];
+            if (file) {
+                alert(`Uploaded file: ${file.name}`);
+                // Implement file upload logic here
+            }
+        });
+    </script>
+</body>
+</html>
